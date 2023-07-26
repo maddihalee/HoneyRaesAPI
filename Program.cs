@@ -52,7 +52,7 @@ List<HoneyRaesAPI.Models.ServiceTicket> serviceTickets = new List<HoneyRaesAPI.M
     {
         Id = 1234,
         CustomerId = 3,
-        EmployeeId = 1,
+        EmployeeId = null,
         Description = "A serious problem",
         Emergency = false,
         DateCompleted = DateTime.Now,
@@ -129,6 +129,23 @@ app.MapPost("/servicetickets", (ServiceTicket serviceTicket) =>
 app.MapDelete("/servicetickets/{id}", (int id) =>
 {
     serviceTickets.Remove(serviceTickets.FirstOrDefault(ticket => ticket.Id == id));
+});
+
+app.MapPut("/servicetickets/{id}", (int id, ServiceTicket serviceTicket) =>
+{
+    ServiceTicket ticketToUpdate = serviceTickets.FirstOrDefault(st => st.Id == id);
+    int ticketIndex = serviceTickets.IndexOf(ticketToUpdate);
+    if (ticketToUpdate == null)
+    {
+        return Results.NotFound();
+    }
+    //the id in the request route doesn't match the id from the ticket in the request body. That's a bad request!
+    if (id != serviceTicket.Id)
+    {
+        return Results.BadRequest();
+    }
+    serviceTickets[ticketIndex] = serviceTicket;
+    return Results.Ok();
 });
 
 app.Run();
