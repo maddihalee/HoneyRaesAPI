@@ -169,6 +169,4 @@ app.MapGet("/servicetickets/unassigned", () =>
     return Results.Ok(unassignedTickets);
 });
 
-
-
 app.Run();
