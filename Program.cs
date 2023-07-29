@@ -54,7 +54,7 @@ List<HoneyRaesAPI.Models.ServiceTicket> serviceTickets = new List<HoneyRaesAPI.M
     {
         Id = 1234,
         CustomerId = 3,
-        EmployeeId = 1,
+        EmployeeId = null,
         Description = "A serious problem",
         Emergency = false,
         DateCompleted = DateTime.Now,
