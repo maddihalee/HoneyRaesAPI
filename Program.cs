@@ -1,4 +1,6 @@
 using HoneyRaesAPI.Models;
+using System.Reflection.Metadata.Ecma335;
+
 var builder = WebApplication.CreateBuilder(args);
 
 List<HoneyRaesAPI.Models.Customer> customers = new List<HoneyRaesAPI.Models.Customer> 
@@ -130,5 +132,43 @@ app.MapDelete("/servicetickets/{id}", (int id) =>
 {
     serviceTickets.Remove(serviceTickets.FirstOrDefault(ticket => ticket.Id == id));
 });
+
+app.MapPut("/servicetickets/{id}", (int id, ServiceTicket serviceTicket) =>
+{
+    ServiceTicket ticketToUpdate = serviceTickets.FirstOrDefault(st => st.Id == id);
+    int ticketIndex = serviceTickets.IndexOf(ticketToUpdate);
+    if (ticketToUpdate == null)
+    {
+        return Results.NotFound();
+    }
+    //the id in the request route doesn't match the id from the ticket in the request body. That's a bad request!
+    if (id != serviceTicket.Id)
+    {
+        return Results.BadRequest();
+    }
+    serviceTickets[ticketIndex] = serviceTicket;
+    return Results.Ok();
+});
+
+app.MapPost("/servicetickets/{id}/complete", (int id) =>
+{
+    ServiceTicket ticketToComplete = serviceTickets.FirstOrDefault(st => st.Id == id);
+    ticketToComplete.DateCompleted = DateTime.Today;
+});
+
+app.MapGet("/servicetickets/emergency", () =>
+{
+    List<ServiceTicket> emergencyTicket = serviceTickets.Where(st => st.Emergency == true).ToList();
+    return Results.Ok(emergencyTicket);
+
+});
+
+app.MapGet("/servicetickets/unassigned", () =>
+{
+    List<ServiceTicket> unassignedTickets = serviceTickets.Where(st => st.EmployeeId == null).ToList();
+    return Results.Ok(unassignedTickets);
+});
+
+
 
 app.Run();
