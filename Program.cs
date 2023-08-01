@@ -37,6 +37,12 @@ List<HoneyRaesAPI.Models.Employee> employees = new List<HoneyRaesAPI.Models.Empl
         Id = 2,
         Name = "Sheryl",
         Specialty = "Livin'"
+    },
+    new Employee()
+    {
+        Id= 3,
+        Name = "Rob",
+        Specialty = "Front-End"
     }
 };
 List<HoneyRaesAPI.Models.ServiceTicket> serviceTickets = new List<HoneyRaesAPI.Models.ServiceTicket>
@@ -48,16 +54,43 @@ List<HoneyRaesAPI.Models.ServiceTicket> serviceTickets = new List<HoneyRaesAPI.M
         EmployeeId = 2,
         Description = "A problem",
         Emergency = true,
-        DateCompleted = DateTime.Now,
+        DateCompleted = null,
     },
     new ServiceTicket()
     {
-        Id = 1234,
+        Id = 124,
         CustomerId = 3,
         EmployeeId = null,
         Description = "A serious problem",
         Emergency = false,
-        DateCompleted = DateTime.Now,
+        DateCompleted = new DateTime(2023, 3, 2),
+    },
+     new ServiceTicket()
+    {
+        Id = 125,
+        CustomerId = 1,
+        EmployeeId = 2,
+        Description = "Oops",
+        Emergency = true,
+        DateCompleted = new DateTime(2022, 3, 2),
+    },
+      new ServiceTicket()
+    {
+        Id = 126,
+        CustomerId = 2,
+        EmployeeId = 2,
+        Description = "Oh no",
+        Emergency = false,
+        DateCompleted = new DateTime(2023, 7, 2),
+    },
+       new ServiceTicket()
+    {
+        Id = 127,
+        CustomerId = 2,
+        EmployeeId = 2,
+        Description = "OH NO!",
+        Emergency = true,
+        DateCompleted = new DateTime(2023, 5, 2),
     }
 };
 
@@ -158,9 +191,8 @@ app.MapPost("/servicetickets/{id}/complete", (int id) =>
 
 app.MapGet("/servicetickets/emergency", () =>
 {
-    List<ServiceTicket> emergencyTicket = serviceTickets.Where(st => st.Emergency == true).ToList();
+    List<ServiceTicket> emergencyTicket = serviceTickets.Where(st => st.Emergency == true && st.DateCompleted == null).ToList();
     return Results.Ok(emergencyTicket);
-
 });
 
 app.MapGet("/servicetickets/unassigned", () =>
@@ -169,6 +201,51 @@ app.MapGet("/servicetickets/unassigned", () =>
     return Results.Ok(unassignedTickets);
 });
 
+app.MapGet("servicetickets/inactive", () =>
+{
+    DateTime oneYearAgo = DateTime.Today.AddYears(-1);
+    List<int> activeCustomerIds = serviceTickets.Where(ticket => ticket.DateCompleted >= oneYearAgo).Select(ticket => ticket.CustomerId).ToList();
+    List<Customer> inactiveCustomers = customers.Where(customer => !activeCustomerIds.Contains(customer.Id)).ToList();
+    return Results.Ok(inactiveCustomers);
+});
 
+app.MapGet("/servicetickets/employee/unassigned", () =>
+{
+    List<Employee> unassignedEmployees = employees.Where(emp => serviceTickets.All(st => st.EmployeeId != emp.Id)).ToList();
+    return Results.Ok(unassignedEmployees);
+});
+
+app.MapGet("/servicetickets/employee/{id}", (int id) => {
+    var employee = employees.FirstOrDefault(e => e.Id == id);
+    if (employee == null)
+    {
+        return Results.NotFound();
+    }
+
+    var employeeCustomers = customers.Where(c => serviceTickets.Any(st => st.CustomerId == c.Id && st.EmployeeId == id));
+    return Results.Ok(employeeCustomers);
+});
+
+app.MapGet("/employeeofthemonth", () =>
+{
+    var lastMonth = DateTime.Now.AddMonths(-1);
+    var employeeOfTheMonth = employees.OrderByDescending(e => serviceTickets.Count(st => st.EmployeeId == e.Id && st.DateCompleted >= lastMonth)).FirstOrDefault();
+    return Results.Ok(employeeOfTheMonth);
+});
+
+app.MapGet("/completedtickets", () =>
+{
+    var completedTickets = serviceTickets.Where(st => st.DateCompleted != null).OrderBy(st => st.DateCompleted);
+    return Results.Ok(completedTickets);
+});
+
+app.MapGet("/prioritizedtickets", () =>
+{
+    var prioritizedTickets = serviceTickets
+        .Where(st => st.DateCompleted == null)
+        .OrderByDescending(st => st.Emergency)
+        .ThenBy(st => st.EmployeeId == 0);
+    return Results.Ok(prioritizedTickets);
+});
 
 app.Run();
